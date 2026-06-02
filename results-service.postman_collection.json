@@ -1,0 +1,688 @@
+{
+	"info": {
+		"name": "Results Service API",
+		"description": "Complete API collection for the Results Service - a comprehensive test execution management system. This service manages test runs, individual tests, and their results within QA projects. All endpoints require authentication via Bearer token.",
+		"version": "1.0.0",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{authToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Health check endpoint to verify service availability. Returns a status object indicating the service is operational. This endpoint does not require authentication."
+					},
+					"response": []
+				}
+			],
+			"description": "Service health and monitoring endpoints"
+		},
+		{
+			"name": "Runs",
+			"item": [
+				{
+					"name": "Create Run",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectId\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Regression Test Run Q1 2026\",\n  \"description\": \"Full regression suite for release 2.5.0\",\n  \"type\": \"Automated\",\n  \"status\": \"Pending\",\n  \"environment\": \"staging\",\n  \"executedBy\": \"507f1f77bcf86cd799439012\",\n  \"startTime\": \"2026-01-20T10:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/runs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs"
+							]
+						},
+						"description": "Creates a new test run within a project. A run represents a collection of tests executed together as part of a test cycle.\n\n**Required Fields:**\n- `projectId` (string): MongoDB ObjectId of the project\n- `name` (string, min 2 chars): Name of the test run\n\n**Optional Fields:**\n- `description` (string): Detailed description of the run purpose\n- `type` (enum): Run type - \"Manual\", \"Automated\", or \"Scheduled\" (default: \"Automated\")\n- `status` (enum): Current status - \"Pending\", \"Running\", \"Completed\", or \"Aborted\" (default: \"Pending\")\n- `environment` (string): Target environment (e.g., dev, staging, production)\n- `executedBy` (string): MongoDB ObjectId of the user executing the run\n- `startTime` (date): When the run started\n- `endTime` (date): When the run completed\n\n**Auto-calculated:**\n- `duration` (number): Automatically calculated in seconds from startTime and endTime\n- `isActive` (boolean): Default true\n- `createdAt`, `updatedAt`: Timestamps"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Runs by Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/runs/:projectId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs",
+								":projectId"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Retrieves all test runs for a specific project. Returns an array of run objects with complete details including execution metadata, status, and timing information.\n\n**Path Parameters:**\n- `projectId` (string): MongoDB ObjectId of the project\n\n**Response includes:**\n- Run name and description\n- Type and status\n- Environment configuration\n- Executor information\n- Timing and duration details\n- Active status and timestamps"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Runs by Project (Alternative)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/runs/project/:projectId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs",
+								"project",
+								":projectId"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Alternative endpoint to retrieve all runs for a specific project. Functionally identical to GET /runs/:projectId but uses a more explicit path structure.\n\n**Path Parameters:**\n- `projectId` (string): MongoDB ObjectId of the project\n\n**Use Case:** Use this endpoint when you prefer explicit resource naming or when integrating with systems that expect /project/ in the path."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Run by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/runs/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439013"
+								}
+							]
+						},
+						"description": "Retrieves a single test run by its unique identifier. Returns complete run details including all metadata, timing information, and execution status.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the run\n\n**Returns:**\n- Complete run object with all fields\n- Populated references (if configured)\n- Creation and modification timestamps\n\n**Error Responses:**\n- 404: Run not found\n- 401: Unauthorized"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Run",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"Running\",\n  \"startTime\": \"2026-01-20T10:30:00.000Z\",\n  \"description\": \"Updated description - Running regression tests\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/runs/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439013"
+								}
+							]
+						},
+						"description": "Updates an existing test run. All fields are optional - only include fields you want to modify.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the run to update\n\n**Updateable Fields:**\n- `name` (string, min 2 chars): Run name\n- `description` (string): Run description\n- `type` (enum): \"Manual\", \"Automated\", or \"Scheduled\"\n- `status` (enum): \"Pending\", \"Running\", \"Completed\", or \"Aborted\"\n- `environment` (string): Target environment\n- `executedBy` (string): User ObjectId\n- `startTime` (date): Start timestamp\n- `endTime` (date): End timestamp\n- `isActive` (boolean): Active status\n\n**Common Use Cases:**\n- Update status as run progresses\n- Set end time and mark as completed\n- Mark run as aborted\n- Update environment or executor information"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Run",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/runs/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439013"
+								}
+							]
+						},
+						"description": "Deletes a test run from the system. This operation may be a soft delete (setting isActive to false) or hard delete depending on service configuration.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the run to delete\n\n**Important Notes:**\n- Deleting a run may affect associated tests and results\n- Consider the impact on historical reporting before deleting\n- Some implementations may prevent deletion of runs with associated data\n\n**Error Responses:**\n- 404: Run not found\n- 401: Unauthorized\n- 403: Forbidden (insufficient permissions)"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Runs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/runs/search?query=regression&fields=name,description",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"runs",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "regression"
+								},
+								{
+									"key": "fields",
+									"value": "name,description"
+								}
+							]
+						},
+						"description": "Generic search endpoint for runs using the prime-qa-commons search functionality. Allows flexible querying across run fields.\n\n**Query Parameters:**\n- `query` (string): Search term to match\n- `fields` (string): Comma-separated list of fields to search in\n- Additional filters supported by the generic search implementation\n\n**Searchable Fields:**\n- name\n- description\n- type\n- status\n- environment\n\n**Use Cases:**\n- Find runs by name pattern\n- Search runs by environment\n- Filter runs by type or status"
+					},
+					"response": []
+				}
+			],
+			"description": "Test Run management endpoints. Runs represent test execution cycles within a project, containing metadata about when tests were executed, by whom, and in what environment."
+		},
+		{
+			"name": "Tests",
+			"item": [
+				{
+					"name": "Create Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"runId\": \"507f1f77bcf86cd799439013\",\n  \"projectId\": \"507f1f77bcf86cd799439011\",\n  \"testCaseId\": \"507f1f77bcf86cd799439014\",\n  \"suiteId\": \"507f1f77bcf86cd799439015\",\n  \"sectionId\": \"507f1f77bcf86cd799439016\",\n  \"title\": \"Login with valid credentials\",\n  \"status\": \"Not Started\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests"
+							]
+						},
+						"description": "Creates a new test instance within a test run. A test represents an individual test case that will be executed as part of a run.\n\n**Required Fields:**\n- `runId` (string): MongoDB ObjectId of the parent run\n- `testCaseId` (string): MongoDB ObjectId of the test case definition\n- `title` (string, min 2 chars): Descriptive title of the test\n\n**Optional Fields:**\n- `projectId` (string): MongoDB ObjectId of the project (auto-populated from run if not provided)\n- `suiteId` (string): MongoDB ObjectId of the test suite\n- `sectionId` (string): MongoDB ObjectId of the test section\n- `status` (enum): \"Not Started\", \"In Progress\", or \"Completed\" (default: \"Not Started\")\n\n**Auto-generated:**\n- `isActive` (boolean): Default true\n- `createdAt`, `updatedAt`: Timestamps\n\n**Relationships:**\n- Links to Run (execution context)\n- Links to TestCase (test definition)\n- Optionally links to Suite and Section (organization)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Tests",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests"
+							]
+						},
+						"description": "Retrieves all tests across all runs. Returns a comprehensive list of test instances with their associated run, project, and test case information.\n\n**Response includes:**\n- Test title and identifiers\n- Run and project associations\n- Test case, suite, and section references\n- Status and timestamps\n- Active status\n\n**Use Cases:**\n- Overview of all test instances\n- Bulk data export\n- Cross-run analysis\n\n**Note:** For large datasets, consider using filtered endpoints like /tests/run/:runId or /tests/project/:projectId instead."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tests by Run",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tests/run/:runId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests",
+								"run",
+								":runId"
+							],
+							"variable": [
+								{
+									"key": "runId",
+									"value": "507f1f77bcf86cd799439013"
+								}
+							]
+						},
+						"description": "Retrieves all tests associated with a specific run. This is the primary way to get the list of tests included in a test execution cycle.\n\n**Path Parameters:**\n- `runId` (string): MongoDB ObjectId of the run\n\n**Response includes:**\n- All tests belonging to the specified run\n- Test metadata and associations\n- Current status of each test\n\n**Use Cases:**\n- Display tests in a run\n- Monitor run progress\n- Execute tests from a run\n- Generate run reports"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tests by Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tests/project/:projectId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests",
+								"project",
+								":projectId"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Retrieves all test instances for a specific project across all runs. Useful for project-level reporting and analysis.\n\n**Path Parameters:**\n- `projectId` (string): MongoDB ObjectId of the project\n\n**Response includes:**\n- All tests from all runs in the project\n- Complete test metadata\n- Run associations\n\n**Use Cases:**\n- Project-wide test execution history\n- Cross-run test analysis\n- Test coverage reporting\n- Historical execution data"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Test by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tests/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439017"
+								}
+							]
+						},
+						"description": "Retrieves a single test instance by its unique identifier. Returns complete test details including all associations and metadata.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the test\n\n**Returns:**\n- Complete test object with all fields\n- Run, project, and test case associations\n- Suite and section references\n- Timestamps and status\n\n**Error Responses:**\n- 404: Test not found\n- 401: Unauthorized"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Test",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"In Progress\",\n  \"title\": \"Login with valid credentials - Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tests/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439017"
+								}
+							]
+						},
+						"description": "Updates an existing test instance. Primarily used to update test status as it progresses through execution.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the test to update\n\n**Updateable Fields:**\n- `title` (string, min 2 chars): Test title\n- `status` (enum): \"Not Started\", \"In Progress\", or \"Completed\"\n- `isActive` (boolean): Active status\n\n**Common Use Cases:**\n- Mark test as in progress when execution starts\n- Mark test as completed when execution finishes\n- Update test title if needed\n- Deactivate tests\n\n**Note:** Only includes fields that are expected to change. Run, project, and test case associations are typically not modified after creation."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Test",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tests/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439017"
+								}
+							]
+						},
+						"description": "Deletes a test instance from a run. May be a soft delete (isActive = false) or hard delete based on configuration.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the test to delete\n\n**Important Considerations:**\n- May affect associated results\n- Consider impact on run completeness\n- May affect reporting and metrics\n\n**Use Cases:**\n- Remove tests added to run by mistake\n- Clean up duplicate test instances\n- Remove obsolete tests\n\n**Error Responses:**\n- 404: Test not found\n- 401: Unauthorized\n- 403: Forbidden"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Tests",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tests/search?query=login&fields=title",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tests",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "login"
+								},
+								{
+									"key": "fields",
+									"value": "title"
+								}
+							]
+						},
+						"description": "Generic search endpoint for tests using prime-qa-commons search functionality. Enables flexible querying across test fields.\n\n**Query Parameters:**\n- `query` (string): Search term to match\n- `fields` (string): Comma-separated list of fields to search in\n- Additional filters supported by generic search\n\n**Searchable Fields:**\n- title\n- status\n- And other indexed fields\n\n**Use Cases:**\n- Find tests by title pattern\n- Filter tests by status\n- Search across multiple fields"
+					},
+					"response": []
+				}
+			],
+			"description": "Test management endpoints. Tests represent individual test case instances within a run, linking test definitions to execution cycles."
+		},
+		{
+			"name": "Results",
+			"item": [
+				{
+					"name": "Create Result",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"testId\": \"507f1f77bcf86cd799439017\",\n  \"projectId\": \"507f1f77bcf86cd799439011\",\n  \"status\": \"Passed\",\n  \"executedBy\": \"507f1f77bcf86cd799439012\",\n  \"startTime\": \"2026-01-20T10:35:00.000Z\",\n  \"endTime\": \"2026-01-20T10:36:30.000Z\",\n  \"logs\": \"Test executed successfully. All assertions passed. Response time: 245ms\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/results",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results"
+							]
+						},
+						"description": "Creates a new test execution result. Results capture the outcome of executing a test, including status, timing, and execution details.\n\n**Required Fields:**\n- `testId` (string): MongoDB ObjectId of the test that was executed\n\n**Optional Fields:**\n- `projectId` (string): MongoDB ObjectId of the project (auto-populated from test if not provided)\n- `status` (enum): \"Passed\", \"Failed\", \"Blocked\", \"Skipped\", or \"Retest\" (default: \"Skipped\")\n- `executedBy` (string): MongoDB ObjectId of the user who executed the test\n- `startTime` (date): When test execution started\n- `endTime` (date): When test execution completed\n- `logs` (string): Detailed execution logs, error messages, or notes\n\n**Auto-calculated Fields:**\n- `duration` (number): Automatically calculated in seconds from startTime and endTime (via pre-save hook)\n- `isActive` (boolean): Default true\n- `createdAt`, `updatedAt`: Timestamps\n\n**Status Values:**\n- **Passed**: Test executed successfully with all assertions passing\n- **Failed**: Test executed but one or more assertions failed\n- **Blocked**: Test could not execute due to blocker (environment issue, dependency failure)\n- **Skipped**: Test was intentionally skipped\n- **Retest**: Test needs to be re-executed"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Results",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results"
+							]
+						},
+						"description": "Retrieves all test results across all tests and runs. Returns comprehensive result data including execution outcomes, timing, and logs.\n\n**Response includes:**\n- Test and project associations\n- Execution status\n- Timing information (start, end, duration)\n- Executor details\n- Execution logs\n- Timestamps\n\n**Use Cases:**\n- System-wide result analysis\n- Bulk data export\n- Cross-project reporting\n- Audit trail\n\n**Note:** For production systems with large datasets, prefer filtered endpoints like /results/test/:testId or /results/project/:projectId"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Results by Test",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/test/:testId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results",
+								"test",
+								":testId"
+							],
+							"variable": [
+								{
+									"key": "testId",
+									"value": "507f1f77bcf86cd799439017"
+								}
+							]
+						},
+						"description": "Retrieves all execution results for a specific test. Shows the complete execution history including multiple attempts, retests, and historical data.\n\n**Path Parameters:**\n- `testId` (string): MongoDB ObjectId of the test\n\n**Response includes:**\n- All result records for the test\n- Chronological execution history\n- Status progression\n- Timing and duration data\n\n**Use Cases:**\n- View test execution history\n- Analyze test stability/flakiness\n- Review previous execution attempts\n- Debug test failures with logs\n- Track retest attempts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Results by Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/project/:projectId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results",
+								"project",
+								":projectId"
+							],
+							"variable": [
+								{
+									"key": "projectId",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Retrieves all test execution results for a specific project. Provides project-level execution metrics and history.\n\n**Path Parameters:**\n- `projectId` (string): MongoDB ObjectId of the project\n\n**Response includes:**\n- All results from all tests in the project\n- Complete execution history\n- Cross-run result data\n\n**Use Cases:**\n- Project-level reporting\n- Quality metrics calculation (pass rate, execution time)\n- Trend analysis over time\n- Test execution coverage\n- Performance monitoring"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Result by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439018"
+								}
+							]
+						},
+						"description": "Retrieves a single test result by its unique identifier. Returns complete execution details for a specific result instance.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the result\n\n**Returns:**\n- Complete result object with all fields\n- Test and project associations\n- Full execution details\n- Timing information\n- Execution logs\n- Timestamps\n\n**Use Cases:**\n- View detailed execution information\n- Retrieve specific result for reporting\n- Debug specific test execution\n- Link to result from external systems\n\n**Error Responses:**\n- 404: Result not found\n- 401: Unauthorized"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Result",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"Retest\",\n  \"logs\": \"Initial failure due to network timeout. Marking for retest.\",\n  \"endTime\": \"2026-01-20T10:37:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/results/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439018"
+								}
+							]
+						},
+						"description": "Updates an existing test result. Typically used to modify result status, add additional logs, or correct execution timing.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the result to update\n\n**Updateable Fields:**\n- `status` (enum): \"Passed\", \"Failed\", \"Blocked\", \"Skipped\", or \"Retest\"\n- `executedBy` (string): User ObjectId\n- `startTime` (date): Execution start time\n- `endTime` (date): Execution end time\n- `logs` (string): Execution logs (can append or replace)\n- `isActive` (boolean): Active status\n\n**Common Use Cases:**\n- Change status from Failed to Retest\n- Add additional diagnostic logs\n- Correct timing information\n- Mark result as inactive\n- Update executor information\n\n**Note:** Duration is auto-recalculated when startTime or endTime is updated."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Result",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439018"
+								}
+							]
+						},
+						"description": "Deletes a test result. May be a soft delete (isActive = false) or hard delete based on configuration.\n\n**Path Parameters:**\n- `id` (string): MongoDB ObjectId of the result to delete\n\n**Important Considerations:**\n- Affects historical reporting\n- May impact metrics and analytics\n- Consider archiving instead of deleting\n- May be subject to data retention policies\n\n**Use Cases:**\n- Remove duplicate results\n- Clean up erroneous data\n- Remove test results from cancelled runs\n- Data cleanup operations\n\n**Error Responses:**\n- 404: Result not found\n- 401: Unauthorized\n- 403: Forbidden (may be restricted for audit compliance)"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Results",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/results/search?status=Failed&logs=timeout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"results",
+								"search"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "Failed"
+								},
+								{
+									"key": "logs",
+									"value": "timeout"
+								}
+							]
+						},
+						"description": "Generic search endpoint for results using prime-qa-commons search functionality. Enables flexible querying across result fields.\n\n**Query Parameters:**\n- `query` (string): General search term\n- `status` (string): Filter by specific status\n- `logs` (string): Search within execution logs\n- `fields` (string): Comma-separated list of fields to search\n- Additional filters supported by generic search\n\n**Searchable Fields:**\n- status\n- logs\n- executedBy\n- And other indexed fields\n\n**Use Cases:**\n- Find all failed results\n- Search for specific error patterns in logs\n- Filter by executor\n- Complex multi-field queries\n- Debugging and troubleshooting"
+					},
+					"response": []
+				}
+			],
+			"description": "Test Result management endpoints. Results capture the outcome of test executions, including pass/fail status, timing information, and detailed execution logs."
+		}
+	]
+}

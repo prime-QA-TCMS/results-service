@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "docker:build": "docker compose build",
-    "docker:up": "docker compose up"
+    "docker:up": "docker compose up",
+    "instal": "npm i --force"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +23,7 @@
     "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
+    "prime-qa-api-common": "^0.0.5",
     "prime-qa-commons": "^1.0.6"
   },
   "devDependencies": {

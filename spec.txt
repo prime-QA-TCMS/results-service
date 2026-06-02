@@ -1,0 +1,380 @@
+TCMS Phase 1 Specification
+
+(Test Case Management & Execution – Foundation Release)
+
+1. Purpose & Goals
+Objective
+
+Phase 1 delivers a production-ready foundation for managing:
+
+Projects
+
+Test case definitions
+
+Test execution runs
+
+Execution results
+
+The goal is to enable manual and automated test execution tracking with clear ownership, isolation, and auditability, while keeping scope intentionally limited.
+
+What Phase 1 is NOT
+
+Advanced reporting / analytics
+
+Test automation orchestration
+
+CI/CD execution triggers
+
+Custom workflows or plugins
+
+Fine-grained RBAC
+
+2. Personas (Phase 1)
+QA Engineer
+
+Creates projects and test cases
+
+Executes test runs manually
+
+Records outcomes (pass/fail)
+
+QA Lead
+
+Organizes test suites
+
+Reviews execution results
+
+Tracks run completion status
+
+System / Automation
+
+Creates automated runs
+
+Updates test results programmatically
+
+3. Phase 1 Functional Scope
+Included Capabilities ✅
+Area	Capability
+Identity	User authentication via JWT
+Projects	Create, update, deactivate projects
+Test Design	Suites → Sections → Test Cases
+Execution	Create test runs
+Execution	Execute tests within runs
+Results	Record outcomes (pass/fail/etc.)
+Visibility	List & view runs and tests
+Ops	Health checks, logging
+Explicitly Excluded ❌
+
+Role hierarchy beyond basic access
+
+Historical metrics dashboards
+
+Cross-project test reuse
+
+Attachments (screenshots, logs)
+
+Notifications
+
+4. Service Landscape (Phase 1)
+Core Services
+Service	Responsibility
+User Service	Auth, identity, tenant context
+Project Service	Project lifecycle
+Test Case Service	Test case definitions
+Results Service	Runs, tests, outcomes
+Service Commons	Shared infra & patterns
+
+Each service is:
+
+Independently deployable
+
+Owns its own database
+
+Communicates via REST (Phase 1)
+
+5. Core Domain Model (Phase 1)
+Project
+
+_id
+
+name
+
+key
+
+owner
+
+visibility
+
+isActive
+
+createdAt, updatedAt
+
+Test Case
+
+_id
+
+projectId
+
+suiteId
+
+sectionId
+
+title
+
+steps
+
+expectedResult
+
+isActive
+
+Test Run
+
+_id
+
+projectId
+
+name
+
+description
+
+status → Pending | Running | Completed | Aborted
+
+executedBy
+
+startTime
+
+endTime
+
+duration
+
+isActive
+
+Test (Execution Instance)
+
+_id
+
+runId
+
+testCaseId
+
+status → NotStarted | InProgress | Completed
+
+outcome → Passed | Failed | Blocked | Skipped
+
+actualResult
+
+failureReason
+
+executedAt
+
+updatedBy
+
+6. Execution Lifecycle (Phase 1 Rules)
+Run Lifecycle
+Pending → Running → Completed | Aborted
+
+
+Rules:
+
+Running requires startTime
+
+Completed requires endTime
+
+Duration = endTime - startTime
+
+Invalid backward transitions are rejected
+
+Test Lifecycle
+NotStarted → InProgress → Completed
+
+
+Rules:
+
+Completed requires outcome
+
+actualResult optional
+
+failureReason required if Failed
+
+7. API Principles (Phase 1)
+REST Conventions
+
+One canonical endpoint per resource
+
+No duplicate or alias routes
+
+Pagination for all list endpoints
+
+Pagination Contract
+
+Query:
+
+?page=1&pageSize=20&sort=createdAt&order=desc
+
+
+Response:
+
+{
+  "data": [...],
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 125,
+    "totalPages": 7
+  }
+}
+
+8. Authorization Model (Phase 1)
+Scope
+
+Authorization is project-scoped, not role-scoped.
+
+Rules:
+
+A user may only access resources belonging to projects they can access
+
+Cross-project or cross-tenant access is forbidden
+
+executedBy defaults to authenticated user
+
+RBAC is deferred to Phase 2.
+
+9. Cross-Service Validation Strategy
+Phase 1 Policy
+Reference	Strategy
+projectId	Hard validation
+userId	JWT-derived
+testCaseId	Format + existence validation
+
+Failures return:
+
+404 if referenced entity does not exist
+
+403 if access is forbidden
+
+10. Non-Functional Requirements (Phase 1)
+Performance
+
+List endpoints paginated
+
+Indexed queries on:
+
+projectId
+
+runId
+
+status
+
+Reliability
+
+Idempotent POSTs via Idempotency-Key
+
+Graceful dependency failures (503)
+
+Observability
+
+Correlation ID on every request
+
+Structured logs
+
+/health endpoint validates DB connectivity
+
+11. Service Commons – Phase 1 Contract
+
+The following must exist in commons and be used by all services:
+
+Mandatory Utilities
+
+Pagination helpers
+
+Standard error model
+
+Correlation ID middleware
+
+Validation helpers (ObjectId, enums)
+
+Idempotency middleware
+
+HTTP client wrapper (timeouts + retries)
+
+Error Format (Global)
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Human readable message",
+    "details": {}
+  }
+}
+
+12. Testing Strategy (Phase 1)
+Required
+
+Unit tests for validation & lifecycle rules
+
+Integration tests for:
+
+Create run
+
+Execute tests
+
+Forbidden access
+
+Contract tests for response shape
+
+Not Required (Yet)
+
+Load testing
+
+Chaos testing
+
+13. Phase 1 Definition of Done (Release Gate)
+
+Phase 1 is considered DONE only if:
+
+ All list endpoints paginated
+
+ Test outcomes enforced
+
+ No duplicate routes
+
+ Project-scoped authorization enforced
+
+ Commons utilities adopted consistently
+
+ Indexes applied
+
+ CI passing with tests
+
+ Postman collections updated
+
+14. Phase 2 Preview (Out of Scope)
+
+Documented here only to prevent scope creep:
+
+Dashboards & metrics
+
+Attachments
+
+Workflow customization
+
+Automation triggers
+
+Advanced RBAC
+
+Final Statement
+
+This Phase 1 spec defines the minimum shippable, production-worthy TCMS foundation.
+Anything not explicitly listed here is out of scope by default.
+
+If you want next, I can:
+
+Convert this into a Phase 1 roadmap + milestone plan
+
+Produce ADR documents per service
+
+Generate Gherkin acceptance criteria for every Phase 1 rule
+
+Add the pino logging library (fast, modern, and widely used).
+Integrate it into the main app entry (index.ts).
+Replace console.log with structured logger calls.
+Add a basic error logger middleware.

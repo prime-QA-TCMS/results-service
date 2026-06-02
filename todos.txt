@@ -1,0 +1,317 @@
+A) Repo Setup + “Understand the Moving Parts” (Day 0–1)
+
+Run the service locally
+
+Bring up Results Service + its DB (Mongo?) using your usual docker-compose / scripts.
+
+Verify GET /health returns OK.
+
+Import the Postman collection and execute a happy path:
+
+Create run → create test → update run status.
+
+Output: a short README note describing how to run it.
+
+Pull in / link service-commons
+
+Confirm how commons is consumed:
+
+npm package / workspace / git submodule / local import
+
+Ensure Results Service builds with commons dependency.
+
+Output: verified install/build instructions.
+
+B) API Contract Cleanup (Phase 1 blocker)
+1) Remove duplicate “runs by project” endpoint
+
+Current issue: there are two ways to get runs by project (GET /runs/:projectId and GET /runs/project/:projectId).
+
+TODO:
+
+Pick ONE canonical endpoint and delete the other.
+
+Recommendation (if you’re allowed to refactor routes):
+
+GET /projects/:projectId/runs
+
+If you must keep /runs, then keep only GET /runs?projectId=...
+
+Deliverables:
+
+Only one endpoint exists.
+
+Postman collection updated accordingly.
+
+Any clients updated.
+
+2) Normalize response + error format
+
+TODO:
+
+Ensure every endpoint returns a consistent shape:
+
+success responses: { data, meta? }
+
+error responses: { error: { code, message, details? } }
+
+Standardize HTTP codes:
+
+400 validation
+
+401 auth missing/invalid
+
+403 forbidden
+
+404 not found
+
+409 conflict (duplicate/idempotency)
+
+500 unexpected
+
+C) Data Model + Execution Outcome (Phase 1 blocker)
+1) Add explicit “test result” fields
+
+Right now tests can be “Completed” but not clearly “Passed/Failed/Blocked”.
+
+TODO (minimum Phase 1):
+
+Add fields on Test entity:
+
+outcome: PASSED | FAILED | BLOCKED | SKIPPED (pick what Phase 1 needs)
+
+actualResult: string (optional)
+
+failureReason: string (optional)
+
+executedAt: datetime (optional)
+
+updatedBy: userId (optional but recommended)
+
+Update create/update endpoints:
+
+When a test is marked Completed, require outcome.
+
+Update any queries/search to include outcome.
+
+Deliverables:
+
+DB schema updated + migration approach documented (even if “no migration needed in dev”).
+
+Postman updated examples.
+
+Validation added.
+
+2) Run “duration” correctness
+
+TODO:
+
+Ensure duration is computed reliably from startTime + endTime.
+
+If run status becomes Completed, require endTime (or auto-set it).
+
+If run status becomes Running, require startTime (or auto-set it).
+
+D) Authorization + Ownership (Phase 1 blocker)
+1) Enforce project-level access
+
+TODO:
+
+Any request with projectId must be validated:
+
+The caller has access to that project (tenant rules)
+
+Define minimal rules:
+
+Read runs/tests: allowed if user is in project’s tenant (or project membership)
+
+Create/update: same
+
+Optional: only creator can modify (if that’s your Phase 1 rule)
+
+Deliverables:
+
+Middleware/guard applied across routes.
+
+Tests verifying forbidden behavior.
+
+2) Validate executedBy
+
+TODO:
+
+If executedBy is provided:
+
+it must belong to the same tenant as the project.
+
+Prefer: default executedBy to caller’s userId from JWT.
+
+E) Pagination + Indexing (Phase 1 blocker)
+1) Pagination on list endpoints
+
+Targets:
+
+“get runs by project”
+
+“get tests for run” (if exists)
+
+any generic list endpoints
+
+TODO:
+
+Add page, pageSize, sort, order query params (or your standard)
+
+Return pagination meta:
+
+meta: { page, pageSize, total, totalPages }
+
+Deliverables:
+
+Implemented and documented in Postman examples.
+
+2) Database indexes
+
+TODO (Mongo examples):
+
+Runs:
+
+{ projectId: 1, createdAt: -1 }
+
+{ projectId: 1, status: 1 }
+
+Tests:
+
+{ runId: 1, createdAt: -1 }
+
+{ testCaseId: 1 } if you query by it
+
+Add indexes in schema definitions.
+
+Deliverables:
+
+Indexes defined in code.
+
+Quick note in README: expected index set.
+
+F) “Cross-service validation strategy” (Required decision + implementation)
+
+You said Phase 1 uses functionality from the attached project; Results references:
+
+Project IDs
+
+Test case IDs
+
+User IDs
+
+TODO:
+
+Decide and implement ONE approach:
+
+Hard validation (sync call to Project/User/Testcase service on create)
+
+Soft validation (accept IDs, validate later / only validate format)
+
+Phase 1 recommendation:
+
+Hard validate projectId on run creation (most important).
+
+Soft validate testcaseId (if system integration isn’t stable yet), but at least validate ID format.
+
+Deliverables:
+
+A short ADR-style note in /docs/decisions/ or README.
+
+G) Idempotency + Concurrency (Phase 1 hardening)
+1) Idempotency for “Create Run” and “Create Test”
+
+TODO:
+
+Support Idempotency-Key header on POST endpoints.
+
+If the same key is used again, return the same created resource.
+
+Deliverables:
+
+Works for at least 24h in DB/cache (whatever standard is).
+
+2) Prevent invalid transitions
+
+TODO:
+
+Enforce valid status transitions:
+
+Pending → Running → Completed/Aborted
+
+Disallow Completed → Running etc.
+
+Same for test statuses and outcomes.
+
+H) Observability + Operational Readiness (Phase 1 hardening)
+
+Structured logging
+
+Ensure every request logs:
+
+requestId/correlationId
+
+userId/tenantId (if safe)
+
+route + status code + duration
+
+Metrics (minimal)
+
+Requests count + latency (by route)
+
+Error count
+
+Health readiness
+
+/health should confirm DB connectivity (or add /ready vs /live if your platform uses it)
+
+I) Testing Plan (Junior-dev executable)
+1) Unit tests
+
+Validators (payload validation)
+
+Status transition rules
+
+Duration calculation
+
+2) Integration tests (API + DB)
+
+POST run
+
+GET runs by project (pagination)
+
+PUT run transitions
+
+POST test + mark completed with outcome
+
+AuthZ cases (403)
+
+404 cases
+
+3) Contract tests (if you have a framework)
+
+Validate response shapes stay consistent
+
+Snapshot error format
+
+Deliverable:
+
+CI runs tests on PR.
+
+“Done” Checklist for Phase 1 Readiness (quick pass/fail)
+
+ Only one “runs by project” endpoint exists
+
+ Tests have outcome and it’s enforced when completed
+
+ Authorization prevents cross-project/tenant access
+
+ List endpoints are paginated
+
+ Key indexes exist for projectId/runId queries
+
+ Standard error model used everywhere
+
+ Minimum test coverage: happy path + 403 + validation + 404
